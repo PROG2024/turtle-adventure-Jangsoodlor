@@ -4,6 +4,10 @@ adventure game.
 """
 from turtle import RawTurtle
 from gamelib import Game, GameElement
+import random
+import tkinter as tk
+import os
+from PIL import Image, ImageTk
 
 
 class TurtleGameElement(GameElement):
@@ -241,14 +245,13 @@ class Enemy(TurtleGameElement):
             (self.y - self.size/2 < self.game.player.y < self.y + self.size/2)
         )
 
-
 # TODO
 # * Define your enemy classes
 # * Implement all methods required by the GameElement abstract class
 # * Define enemy's update logic in the update() method
 # * Check whether the player hits this enemy, then call the
 #   self.game.game_over_lose() method in the TurtleAdventureGame class.
-class DemoEnemy(Enemy):
+class RandomWalkEnemy(Enemy):
     """
     Demo enemy
     """
@@ -258,19 +261,75 @@ class DemoEnemy(Enemy):
                  size: int,
                  color: str):
         super().__init__(game, size, color)
+        self.__id = None
+        self.__x_dest = self.random_x()
+        self.__y_dest = self.random_y()
 
     def create(self) -> None:
-        pass
+        self.__id = self.game.canvas.create_oval(100,
+                                                 100,
+                                                 100 + self.size,
+                                                 100 + self.size,fill=self.color)
+
+    def random_x(self):
+        return random.randint(0, self.canvas.winfo_width())
+
+    def random_y(self):
+        return random.randint(0, self.canvas.winfo_height())
+    
+    def move_x(self):
+        if self.x in range(self.__x_dest-100, self.__x_dest+100):
+            self.__x_dest = self.random_x()
+        x_spd = random.randint(1,self.size)
+        if self.__x_dest > self.x:
+            self.x += x_spd
+        else:
+            self.x -= x_spd
+
+    def move_y(self):
+        if self.y in range(self.__y_dest-self.size, self.__y_dest+self.size):
+            self.__y_dest = self.random_y()
+        y_spd = random.randint(1,self.size)
+        if self.__y_dest > self.y:
+            self.y += y_spd
+        else:
+            self.y -= y_spd
 
     def update(self) -> None:
-        pass
+        self.move_x()
+        self.move_y()
+        if self.hits_player():
+            self.game.game_over_lose()
 
     def render(self) -> None:
-        pass
+        self.game.canvas.coords(self.__id, self.x - self.size/2,
+                                self.y - self.size/2,
+                                self.x + self.size,
+                                self.y + self.size)
 
     def delete(self) -> None:
         pass
 
+class ChasingEnemy(Enemy):
+    def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
+        super().__init__(game, size, color)
+        self.__img = None
+        self.__img_obj = None
+
+    def create(self):
+        self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'skibidi_toilet2.ppm'))
+        # self.__img = ImageTk.PhotoImage(Image.open('skibidi_toilet2.png'))
+        self.__img_obj = self.canvas.create_image(100,100, image=self.__img, anchor=tk.NW)
+
+    def update(self):
+        player_x, player_y = self.game.player.x, self.game.player.y
+        # self.x += 0.1
+        # self.y += 0.1
+
+    def render(self):
+        self.canvas.move(self.__img_obj, self.x, self.y)
+    def delete(self):
+        pass
 
 # TODO
 # Complete the EnemyGenerator class by inserting code to generate enemies
@@ -311,10 +370,15 @@ class EnemyGenerator:
         """
         Create a new enemy, possibly based on the game level
         """
-        new_enemy = DemoEnemy(self.__game, 20, "red")
-        new_enemy.x = 100
-        new_enemy.y = 100
-        self.game.add_element(new_enemy)
+        for _ in range(5):
+            new_enemy = RandomWalkEnemy(self.__game, 20, "red")
+            new_enemy.x = random.randint(0, self.__game.canvas.winfo_width())
+            new_enemy.y = random.randint(0, self.__game.canvas.winfo_height())
+            self.game.add_element(new_enemy)
+        a = ChasingEnemy(self.__game, 100, "red")
+        a.x = 0
+        a.y = 0
+        self.game.add_element(a)
 
 
 class TurtleAdventureGame(Game): # pylint: disable=too-many-ancestors
