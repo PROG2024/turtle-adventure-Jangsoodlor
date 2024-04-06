@@ -393,7 +393,7 @@ class FencingEnemy(Enemy):
         self.y -= self.__spd
         if self.y in range(self.north-self.__spd+1, self.north + self.__spd-1):
             self.__move = self.move_left
-    
+
     def update(self):
         self.__move()
         if self.hits_player():
@@ -416,38 +416,36 @@ class TruckKun(Enemy):
         self.__img_obj = None
         self.__is_animating = False
         self.__spd = 10
-        self.x = self.game.winfo_width()+100
-        self.y = self.game.player.y
+        self.summon()
 
     def create(self):
         if self.__is_animating:
             self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'truck_kun.gif'))
             self.__img_obj = self.canvas.create_image(self.x,self.y, image=self.__img, anchor=tk.CENTER)
 
-    def trigger(self):
-        if random.randint(1,max(100-self.game.level**3, 10)) == 1:
-            print('lol')
-            self.__is_animating = True
-            self.x = self.game.winfo_width()+100
-            self.y = self.game.player.y
-            self.create()
+    def summon(self):
+        print('lol')
+        self.__is_animating = True
+        self.x = self.game.winfo_width()+100
+        self.y = self.game.player.y
+        self.create()
 
     def move(self):
         if self.x <= 0:
             self.__is_animating = False
             self.delete()
+            self.game.after(5000, self.summon)
         elif self.__spd > 0:
             self.__spd *= -1
         else:
             self.x += self.__spd
 
     def update(self):
-        if not self.__is_animating:
-            self.trigger()
-        elif self.hits_player():
-            self.game.game_over_lose()
-        else:
-            self.move()
+        if self.__is_animating:
+            if self.hits_player():
+                self.game.game_over_lose()
+            else:
+                self.move()
 
     def render(self):
         if self.__is_animating:
@@ -478,7 +476,8 @@ class EnemyGenerator:
         self.__level: int = level
 
         # example
-        self.__game.after(100, self.create_enemy)
+        self.__game.after(100, self.create_basic_enemy)
+        self.__game.after(5000, self.summon_truck_kun)
 
     @property
     def game(self) -> "TurtleAdventureGame":
@@ -494,22 +493,26 @@ class EnemyGenerator:
         """
         return self.__level
 
-    def create_enemy(self) -> None:
-        """
-        Create a new enemy, possibly based on the game level
-        """
-        for _ in range(self.game.level):
-            new_enemy = RandomWalkEnemy(self.__game, 20, "red")
-            self.game.add_element(new_enemy)
-        for _ in range(1+self.game.level//10):
-            skibidi = ChasingEnemy(self.__game, 65, "red")
-            self.game.add_element(skibidi)
-        for _ in range(4):
-            fencer = FencingEnemy(self.__game, 10, "green")
-            self.game.add_element(fencer)
-        truck = TruckKun(self.__game, 100, "red")
-        self.game.add_element(truck)
+    def create_basic_enemy(self):
+        self.create_fencer()
+        self.create_random_walker()
+        self.create_skibidi()
 
+    def create_random_walker(self) -> None:
+        for _ in range(self.game.level):
+            new_enemy = RandomWalkEnemy(self.game, 20, "red")
+            self.game.add_enemy(new_enemy)
+    def create_skibidi(self):
+        for _ in range(1+self.game.level//10):
+            skibidi = ChasingEnemy(self.game, 65, "red")
+            self.game.add_enemy(skibidi)
+    def create_fencer(self):
+        for _ in range(4):
+            fencer = FencingEnemy(self.game, 10, "green")
+            self.game.add_enemy(fencer)
+    def summon_truck_kun(self):
+        truck = TruckKun(self.game, 100, "red")
+        self.game.add_enemy(truck)
 
 class TurtleAdventureGame(Game): # pylint: disable=too-many-ancestors
     """
