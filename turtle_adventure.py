@@ -7,7 +7,8 @@ from gamelib import Game, GameElement
 import random
 import tkinter as tk
 import os
-from PIL import Image, ImageTk
+
+# from PIL import Image, ImageTk
 
 
 class TurtleGameElement(GameElement):
@@ -264,6 +265,7 @@ class RandomWalkEnemy(Enemy):
         self.__id = None
         self.__x_dest = self.random_x()
         self.__y_dest = self.random_y()
+        self.__spd = random.randint(1,10)
 
     def create(self) -> None:
         self.__id = self.game.canvas.create_oval(100,
@@ -280,20 +282,20 @@ class RandomWalkEnemy(Enemy):
     def move_x(self):
         if self.x in range(self.__x_dest-100, self.__x_dest+100):
             self.__x_dest = self.random_x()
-        x_spd = random.randint(1,self.size)
+            self.__spd = random.randint(3,10)
         if self.__x_dest > self.x:
-            self.x += x_spd
+            self.x += self.__spd
         else:
-            self.x -= x_spd
+            self.x -= self.__spd
 
     def move_y(self):
         if self.y in range(self.__y_dest-self.size, self.__y_dest+self.size):
             self.__y_dest = self.random_y()
-        y_spd = random.randint(1,self.size)
+            self.__spd = random.randint(3,10)
         if self.__y_dest > self.y:
-            self.y += y_spd
+            self.y += self.__spd
         else:
-            self.y -= y_spd
+            self.y -= self.__spd
 
     def update(self) -> None:
         self.move_x()
@@ -315,19 +317,26 @@ class ChasingEnemy(Enemy):
         super().__init__(game, size, color)
         self.__img = None
         self.__img_obj = None
+        self.__spd = 3
 
     def create(self):
         self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'skibidi_toilet2.ppm'))
         # self.__img = ImageTk.PhotoImage(Image.open('skibidi_toilet2.png'))
-        self.__img_obj = self.canvas.create_image(100,100, image=self.__img, anchor=tk.NW)
+        self.__img_obj = self.canvas.create_image(self.x,self.y, image=self.__img, anchor=tk.CENTER)
 
     def update(self):
         player_x, player_y = self.game.player.x, self.game.player.y
-        # self.x += 0.1
-        # self.y += 0.1
+        delta_x, delta_y = player_x - self.x, player_y - self.y
+        delta_c = (delta_x**2 + delta_y**2)**0.5
+        self.__x_spd = self.__spd * (delta_x/delta_c)
+        self.__y_spd = self.__spd * (delta_y/delta_c)
+        self.x += self.__x_spd
+        self.y += self.__y_spd
+        if self.hits_player():
+            self.game.game_over_lose()
 
     def render(self):
-        self.canvas.move(self.__img_obj, self.x, self.y)
+        self.canvas.move(self.__img_obj,self.__x_spd, self.__y_spd)
     def delete(self):
         pass
 
@@ -370,15 +379,16 @@ class EnemyGenerator:
         """
         Create a new enemy, possibly based on the game level
         """
-        for _ in range(5):
+        for _ in range(1,self.game.level):
             new_enemy = RandomWalkEnemy(self.__game, 20, "red")
-            new_enemy.x = random.randint(0, self.__game.canvas.winfo_width())
-            new_enemy.y = random.randint(0, self.__game.canvas.winfo_height())
+            new_enemy.x = random.randint(200, self.__game.canvas.winfo_width())
+            new_enemy.y = random.randint(200, self.__game.canvas.winfo_height())
             self.game.add_element(new_enemy)
-        a = ChasingEnemy(self.__game, 100, "red")
-        a.x = 0
-        a.y = 0
-        self.game.add_element(a)
+        for _ in range(1+self.game.level//10):
+            a = ChasingEnemy(self.__game, 65, "red")
+            a.x = random.randint(200,self.__game.canvas.winfo_width()-100)
+            a.y = random.randint(200,self.__game.canvas.winfo_height()-100)
+            self.game.add_element(a)
 
 
 class TurtleAdventureGame(Game): # pylint: disable=too-many-ancestors
