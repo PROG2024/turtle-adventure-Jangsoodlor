@@ -265,20 +265,20 @@ class RandomWalkEnemy(Enemy):
         self.__id = None
         self.__x_dest = self.random_x()
         self.__y_dest = self.random_y()
-        self.__spd = random.randint(1,10)
+        self.__spd = random.randint(1,5)
 
     def create(self) -> None:
-        self.__id = self.game.canvas.create_oval(100,
-                                                 100,
-                                                 100 + self.size,
-                                                 100 + self.size,fill=self.color)
+        self.__id = self.game.canvas.create_oval(0,
+                                                 0,
+                                                 self.size,
+                                                 self.size,fill=self.color)
 
     def random_x(self):
         return random.randint(0, self.canvas.winfo_width())
 
     def random_y(self):
         return random.randint(0, self.canvas.winfo_height())
-    
+
     def move_x(self):
         if self.x in range(self.__x_dest-100, self.__x_dest+100):
             self.__x_dest = self.random_x()
@@ -321,6 +321,7 @@ class ChasingEnemy(Enemy):
 
     def create(self):
         self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'skibidi_toilet2.ppm'))
+        #TODO remvoe comment
         # self.__img = ImageTk.PhotoImage(Image.open('skibidi_toilet2.png'))
         self.__img_obj = self.canvas.create_image(self.x,self.y, image=self.__img, anchor=tk.CENTER)
 
@@ -337,6 +338,56 @@ class ChasingEnemy(Enemy):
 
     def render(self):
         self.canvas.move(self.__img_obj,self.__x_spd, self.__y_spd)
+    def delete(self):
+        pass
+
+class FencingEnemy(Enemy):
+    def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
+        super().__init__(game, size, color)
+        self.__id = None
+        self.west = self.game.home.x - self.size - self.game.home.size - 10
+        self.east = self.game.home.x + self.game.home.size + self.size + 10
+        self.north = self.game.home.y - self.game.home.size - self.size - 10
+        self.south = self.game.home.y + self.game.home.size + self.size + 10
+        self.x = random.randint(self.west, self.east)
+        self.y = self.north
+        self.__move = self.move_left
+        self.__spd = self.game.level * 2
+
+    def create(self):
+        self.__id = self.canvas.create_rectangle(0,0,self.size,self.size, fill=self.color)
+
+    def move_left(self):
+        self.x -= self.__spd
+        if self.x in range(self.west-self.__spd+1, self.west+self.__spd-1):
+            self.__move = self.move_down
+
+    def move_down(self):
+        self.y += self.__spd
+        if self.y in range(self.south-self.__spd+1, self.south+self.__spd-1):
+            self.__move = self.move_right
+
+    def move_right(self):
+        self.x += self.__spd
+        if self.x in range(self.east-self.__spd+1, self.east+self.__spd-1):
+            self.__move = self.move_up
+
+    def move_up(self):
+        self.y -= self.__spd
+        if self.y in range(self.north-self.__spd+1, self.north + self.__spd-1):
+            self.__move = self.move_left
+    
+    def update(self):
+        self.__move()
+        if self.hits_player():
+            self.game.game_over_lose()
+
+    def render(self):
+        self.game.canvas.coords(self.__id, self.x - self.size/2,
+                                self.y - self.size/2,
+                                self.x + self.size,
+                                self.y + self.size)
+
     def delete(self):
         pass
 
@@ -379,16 +430,19 @@ class EnemyGenerator:
         """
         Create a new enemy, possibly based on the game level
         """
-        for _ in range(1,self.game.level):
+        for _ in range(self.game.level):
             new_enemy = RandomWalkEnemy(self.__game, 20, "red")
             new_enemy.x = random.randint(200, self.__game.canvas.winfo_width())
             new_enemy.y = random.randint(200, self.__game.canvas.winfo_height())
             self.game.add_element(new_enemy)
         for _ in range(1+self.game.level//10):
-            a = ChasingEnemy(self.__game, 65, "red")
-            a.x = random.randint(200,self.__game.canvas.winfo_width()-100)
-            a.y = random.randint(200,self.__game.canvas.winfo_height()-100)
-            self.game.add_element(a)
+            skibidi = ChasingEnemy(self.__game, 65, "red")
+            skibidi.x = random.randint(200,self.__game.canvas.winfo_width()-100)
+            skibidi.y = random.randint(200,self.__game.canvas.winfo_height()-100)
+            self.game.add_element(skibidi)
+        for _ in range(4):
+            fencer = FencingEnemy(self.__game, 10, "green")
+            self.game.add_element(fencer)
 
 
 class TurtleAdventureGame(Game): # pylint: disable=too-many-ancestors
