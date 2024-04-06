@@ -267,7 +267,7 @@ class RandomWalkEnemy(Enemy):
         self.y = self.random_y()
         self.__x_dest = self.random_x()
         self.__y_dest = self.random_y()
-        self.__spd = random.randint(1,3)
+        self.__spd = random.randint(1,2)
 
     def create(self) -> None:
         self.__id = self.game.canvas.create_oval(0,
@@ -409,13 +409,13 @@ class FencingEnemy(Enemy):
         self.canvas.delete(self.__id)
 
 class TruckKun(Enemy):
-    """Unique Enemy"""
+    """Unique Enemy that will attempts to send our little turtle to another world"""
     def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
         super().__init__(game, size, color)
         self.__img = None
         self.__img_obj = None
         self.__is_animating = False
-        self.__spd = 20
+        self.__spd = 10
         self.x = self.game.winfo_width()+100
         self.y = self.game.player.y
 
