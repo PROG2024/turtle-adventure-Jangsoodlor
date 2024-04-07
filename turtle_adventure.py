@@ -331,8 +331,8 @@ class ChasingEnemy(Enemy):
         self.__img = None
         self.__img_obj = None
         self.__spd = 2
-        self.x = random.randint(200,self.canvas.winfo_width()-100)
-        self.y = random.randint(200,self.canvas.winfo_height()-100)
+        self.x = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_width()-100)
+        self.y = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_height()-100)
         self.__x_spd = 0
         self.__y_spd = 0
         self.__hide = False
@@ -390,28 +390,28 @@ class FencingEnemy(Enemy):
 
     def move_left(self):
         """move the fencer to the left until hitting the top-left corner"""
-        if self.x in range(self.west-self.__spd+1, self.west+self.__spd-1):
+        if self.x in range(self.west-self.size, self.west+self.size):
             self.__move = self.move_down
         else:
             self.x -= self.__spd
 
     def move_down(self):
         """move the fencer down until hitting the bottom-left corner"""
-        if self.y in range(self.south-self.__spd+1, self.south+self.__spd-1):
+        if self.y in range(self.south-self.size, self.south+self.size):
             self.__move = self.move_right
         else:
             self.y += self.__spd
 
     def move_right(self):
         """"move the fencer to the right until hitting the bottom-right corner"""
-        if self.x in range(self.east-self.__spd+1, self.east+self.__spd-1):
+        if self.x in range(self.east-self.size, self.east+self.size):
             self.__move = self.move_up
         else:
             self.x += self.__spd
 
     def move_up(self):
         """move the fencer up until hitting the top-right corner"""
-        if self.y in range(self.north-self.__spd+1, self.north + self.__spd-1):
+        if self.y in range(self.north-self.size, self.north + self.size):
             self.__move = self.move_left
         else:
             self.y -= self.__spd
@@ -534,7 +534,7 @@ class EnemyGenerator:
 
     def create_random_walker(self) -> None:
         """Create random walkers"""
-        for _ in range(self.game.level):
+        for _ in range(self.game.level+3):
             new_enemy = RandomWalkEnemy(self.game, 20, "red")
             self.game.add_enemy(new_enemy)
 
