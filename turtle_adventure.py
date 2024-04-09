@@ -330,7 +330,7 @@ class ChasingEnemy(Enemy):
         super().__init__(game, size, color)
         self.__img = None
         self.__img_obj = None
-        self.__spd = 2
+        self.__spd = 3
         self.x = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_width()-100)
         self.y = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_height()-100)
         self.__x_spd = 0
@@ -361,7 +361,7 @@ class ChasingEnemy(Enemy):
 
     def render(self):
         """renders the chaser"""
-        self.canvas.move(self.__img_obj,self.__x_spd, self.__y_spd)
+        self.canvas.coords(self.__img_obj,self.x, self.y)
 
     def delete(self):
         """deletes the chaser"""
@@ -481,7 +481,7 @@ class TruckKun(Enemy):
     def render(self):
         """render truck-kun"""
         if self.__is_animating:
-            self.canvas.move(self.__img_obj, self.__spd, 0)
+            self.canvas.coords(self.__img_obj, self.x, self.y)
 
     def delete(self):
         """deletes truck-kun from the canvas"""
