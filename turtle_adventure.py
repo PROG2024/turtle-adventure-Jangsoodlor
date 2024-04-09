@@ -376,14 +376,14 @@ class FencingEnemy(Enemy):
     def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
         super().__init__(game, size, color)
         self.__id = None
-        self.west = self.game.home.x - self.size - self.game.home.size - 10
-        self.east = self.game.home.x + self.game.home.size + self.size + 10
-        self.north = self.game.home.y - self.game.home.size - self.size - 10
-        self.south = self.game.home.y + self.game.home.size + self.size + 10
+        self.__move = self.move_left
+        self.__spd = min(20, self.game.level)
+        self.west = self.game.home.x - self.size - self.game.home.size - self.__spd
+        self.east = self.game.home.x + self.game.home.size + self.size + self.__spd
+        self.north = self.game.home.y - self.game.home.size - self.size - self.__spd
+        self.south = self.game.home.y + self.game.home.size + self.size + self.__spd
         self.x = random.randint(self.west, self.east)
         self.y = self.north
-        self.__move = self.move_left
-        self.__spd = self.game.level
 
     def create(self):
         """creates the fencer"""
@@ -510,8 +510,8 @@ class EnemyGenerator:
         # example
         self.__game.after(100, self.create_basic_enemy)
         self.__game.after(5000, self.summon_truck_kun)
-        self.__game.after(10000, self.create_chaser)
-        self.__game.after(20000, self.create_random_walker)
+        self.__game.after(10000, self.create_chaser, 1)
+        self.__game.after(20000, self.create_chaser, 1)
 
     @property
     def game(self) -> "TurtleAdventureGame":
@@ -530,20 +530,20 @@ class EnemyGenerator:
     def create_basic_enemy(self):
         """Create all basic enemies"""
         self.create_fencer()
-        self.create_random_walker()
-        self.create_chaser()
+        self.create_random_walker(self.game.level+3)
+        self.create_chaser(1+self.game.level//10)
 
-    def create_random_walker(self) -> None:
+    def create_random_walker(self, n) -> None:
         """Create random walkers"""
-        for _ in range(self.game.level+3):
+        for _ in range(n):
             color = random.choice(['purple', 'cyan', 'blue',
                                    'limegreen', 'yellow', 'orange', 'red'])
             new_enemy = RandomWalkEnemy(self.game, 20, color)
             self.game.add_enemy(new_enemy)
 
-    def create_chaser(self):
+    def create_chaser(self, n):
         """create chasers"""
-        for _ in range(1+self.game.level//10):
+        for _ in range(n):
             chaser = ChasingEnemy(self.game, 60, "red")
             self.game.add_enemy(chaser)
 
