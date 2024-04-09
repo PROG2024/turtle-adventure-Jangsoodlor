@@ -339,8 +339,9 @@ class ChasingEnemy(Enemy):
 
     def create(self):
         """creates the chaser"""
+        ind = f"gif -index {random.randint(0,1)}"
         self.__hide = False
-        self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'skibidi_toilet.gif'))
+        self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'chaser.gif'), format=ind)
         self.__img_obj = self.canvas.create_image(self.x,self.y,
                                                   image=self.__img,
                                                   anchor=tk.CENTER)
@@ -535,14 +536,16 @@ class EnemyGenerator:
     def create_random_walker(self) -> None:
         """Create random walkers"""
         for _ in range(self.game.level+3):
-            new_enemy = RandomWalkEnemy(self.game, 20, "red")
+            color = random.choice(['purple', 'cyan', 'blue',
+                                   'limegreen', 'yellow', 'orange', 'red'])
+            new_enemy = RandomWalkEnemy(self.game, 20, color)
             self.game.add_enemy(new_enemy)
 
     def create_chaser(self):
         """create chasers"""
         for _ in range(1+self.game.level//10):
-            skibidi = ChasingEnemy(self.game, 60, "red")
-            self.game.add_enemy(skibidi)
+            chaser = ChasingEnemy(self.game, 60, "red")
+            self.game.add_enemy(chaser)
 
     def create_fencer(self):
         """create fencer"""
