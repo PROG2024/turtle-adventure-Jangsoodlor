@@ -544,7 +544,7 @@ class EnemyGenerator:
     def create_chaser(self, n):
         """create chasers"""
         for _ in range(n):
-            chaser = ChasingEnemy(self.game, 60, "red")
+            chaser = ChasingEnemy(self.game, 55, "red")
             self.game.add_enemy(chaser)
 
     def create_fencer(self):
