@@ -2,8 +2,13 @@
 The turtle_adventure module maintains all classes related to the Turtle's
 adventure game.
 """
+import random
+import tkinter as tk
+import os
 from turtle import RawTurtle
 from gamelib import Game, GameElement
+
+# from PIL import Image, ImageTk
 
 
 class TurtleGameElement(GameElement):
@@ -241,16 +246,14 @@ class Enemy(TurtleGameElement):
             (self.y - self.size/2 < self.game.player.y < self.y + self.size/2)
         )
 
-
-# TODO
 # * Define your enemy classes
 # * Implement all methods required by the GameElement abstract class
 # * Define enemy's update logic in the update() method
 # * Check whether the player hits this enemy, then call the
 #   self.game.game_over_lose() method in the TurtleAdventureGame class.
-class DemoEnemy(Enemy):
+class RandomWalkEnemy(Enemy):
     """
-    Demo enemy
+    Enemy that will walk randomly on the screen
     """
 
     def __init__(self,
@@ -258,21 +261,235 @@ class DemoEnemy(Enemy):
                  size: int,
                  color: str):
         super().__init__(game, size, color)
+        self.__id = None
+        self.x = self.random_x()
+        self.y = self.random_y()
+        self.__x_dest = self.random_x()
+        self.__y_dest = self.random_y()
+        self.__spd = random.randint(1,3)
 
     def create(self) -> None:
-        pass
+        """creates the random walker"""
+        self.__id = self.game.canvas.create_oval(0,
+                                                 0,
+                                                 self.size,
+                                                 self.size,fill=self.color)
+
+    def random_x(self):
+        """random the coordinate on the x-axis that's in the canvas"""
+        return random.randint(0, self.canvas.winfo_width())
+
+    def random_y(self):
+        """random the coordinate on the y-axis that's in the canvas"""
+        return random.randint(0, self.canvas.winfo_height())
+
+    def move_x(self):
+        """move the random walker along the x-axis"""
+        if self.x in range(self.__x_dest-100, self.__x_dest+100):
+            self.__x_dest = self.random_x()
+            self.__spd = random.randint(1,3)
+        elif self.__x_dest > self.x:
+            self.x += self.__spd
+        else:
+            self.x -= self.__spd
+
+    def move_y(self):
+        """move the random walker along the x-axis"""
+        if self.y in range(self.__y_dest-self.size, self.__y_dest+self.size):
+            self.__y_dest = self.random_y()
+            self.__spd = random.randint(1,3)
+        elif self.__y_dest > self.y:
+            self.y += self.__spd
+        else:
+            self.y -= self.__spd
 
     def update(self) -> None:
-        pass
+        """update the random walker"""
+        self.move_x()
+        self.move_y()
+        if self.hits_player():
+            self.game.game_over_lose()
 
     def render(self) -> None:
-        pass
+        """renders the random walker"""
+        self.game.canvas.coords(self.__id, self.x - self.size/2,
+                                self.y - self.size/2,
+                                self.x + self.size,
+                                self.y + self.size)
 
     def delete(self) -> None:
-        pass
+        """deletes the random walker"""
+        self.canvas.delete(self.__id)
+
+class ChasingEnemy(Enemy):
+    """
+    Enemy that will try chasing the player. It'll walk in a direct path
+    from its coordinates to the player
+    """
+    def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
+        super().__init__(game, size, color)
+        self.__img = None
+        self.__img_obj = None
+        self.__spd = 3
+        self.x = random.randint(int(self.canvas.winfo_width()*0.2),self.canvas.winfo_width()-100)
+        self.y = random.randint(int(self.canvas.winfo_width()*0.2),self.canvas.winfo_height()-100)
+        self.__x_spd = 0
+        self.__y_spd = 0
+        self.__hide = False
+
+    def create(self):
+        """creates the chaser"""
+        ind = f"gif -index {random.randint(0,1)}"
+        self.__hide = False
+        self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'chaser.gif'), format=ind)
+        self.__img_obj = self.canvas.create_image(self.x,self.y,
+                                                  image=self.__img,
+                                                  anchor=tk.CENTER)
+
+    def update(self):
+        """update the chaser."""
+        if not self.__hide:
+            player_x, player_y = self.game.player.x, self.game.player.y
+            delta_x, delta_y = player_x - self.x, player_y - self.y
+            delta_c = (delta_x**2 + delta_y**2)**0.5
+            self.__x_spd = self.__spd * (delta_x/delta_c)
+            self.__y_spd = self.__spd * (delta_y/delta_c)
+            self.x += self.__x_spd
+            self.y += self.__y_spd
+            if self.hits_player():
+                self.game.game_over_lose()
+
+    def render(self):
+        """renders the chaser"""
+        self.canvas.coords(self.__img_obj,self.x, self.y)
+
+    def delete(self):
+        """deletes the chaser"""
+        self.canvas.delete(self.__img_obj)
+        self.canvas.delete(self.__img)
+        self.__hide = True
+
+class FencingEnemy(Enemy):
+    """Enemy that will walk around the home in a counter-clockwise square
+    It will spawn on the "top" of the square area with random x coordinate.
+    """
+    def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
+        super().__init__(game, size, color)
+        self.__id = None
+        self.__move = self.move_left
+        self.__spd = min(20, self.game.level)
+        self.west = self.game.home.x - self.size - self.game.home.size - self.__spd
+        self.east = self.game.home.x + self.game.home.size + self.size + self.__spd
+        self.north = self.game.home.y - self.game.home.size - self.size - self.__spd
+        self.south = self.game.home.y + self.game.home.size + self.size + self.__spd
+        self.x = random.randint(self.west, self.east)
+        self.y = self.north
+
+    def create(self):
+        """creates the fencer"""
+        self.__id = self.canvas.create_rectangle(0,0,self.size,self.size, fill=self.color)
+
+    def move_left(self):
+        """move the fencer to the left until hitting the top-left corner"""
+        if self.x in range(self.west-self.size, self.west+self.size):
+            self.__move = self.move_down
+        else:
+            self.x -= self.__spd
+
+    def move_down(self):
+        """move the fencer down until hitting the bottom-left corner"""
+        if self.y in range(self.south-self.size, self.south+self.size):
+            self.__move = self.move_right
+        else:
+            self.y += self.__spd
+
+    def move_right(self):
+        """"move the fencer to the right until hitting the bottom-right corner"""
+        if self.x in range(self.east-self.size, self.east+self.size):
+            self.__move = self.move_up
+        else:
+            self.x += self.__spd
+
+    def move_up(self):
+        """move the fencer up until hitting the top-right corner"""
+        if self.y in range(self.north-self.size, self.north + self.size):
+            self.__move = self.move_left
+        else:
+            self.y -= self.__spd
+
+    def update(self):
+        """update the fencer"""
+        self.__move()
+        if self.hits_player():
+            self.game.game_over_lose()
+
+    def render(self):
+        """render the fencer"""
+        self.game.canvas.coords(self.__id, self.x - self.size/2,
+                                self.y - self.size/2,
+                                self.x + self.size,
+                                self.y + self.size)
+
+    def delete(self):
+        """deletes the fencer"""
+        self.canvas.delete(self.__id)
+
+class TruckKun(Enemy):
+    """A Unique Enemy that will attempts to send our poor little turtle
+    to another world at a high speed along the x-axis. Once you invoke it,
+    it'll automatically spawn every 5 second on the turtle's current y-coordinate.
+    """
+    def __init__(self, game: "TurtleAdventureGame", size: int, color: str):
+        super().__init__(game, size, color)
+        self.__img = None
+        self.__img_obj = None
+        self.__is_animating = False
+        self.__spd = -10
+        self.summon()
+
+    def create(self):
+        """Reads the image and creates truck-kun object"""
+        if self.__is_animating:
+            self.__img = tk.PhotoImage(file=os.path.join(os.getcwd(), 'truck_kun.gif'))
+            self.__img_obj = self.canvas.create_image(self.x,self.y,
+                                                      image=self.__img, anchor=tk.CENTER)
+
+    def summon(self):
+        """Spawn Truck-kun on the turtle's current y-coords."""
+        self.__is_animating = True
+        self.x = self.game.winfo_width()+100
+        self.y = self.game.player.y
+        self.create()
+
+    def move(self):
+        """Move truck-kun"""
+        if self.x <= 0:
+            self.__is_animating = False
+            self.delete()
+            self.game.after(5000, self.summon)
+        else:
+            self.x += self.__spd
+
+    def update(self):
+        """update truck-kun"""
+        if self.__is_animating:
+            if self.hits_player():
+                self.game.game_over_lose()
+            else:
+                self.move()
+
+    def render(self):
+        """render truck-kun"""
+        if self.__is_animating:
+            self.canvas.coords(self.__img_obj, self.x, self.y)
+
+    def delete(self):
+        """deletes truck-kun from the canvas"""
+        self.canvas.delete(self.__img_obj)
+        self.canvas.delete(self.__img)
+        self.__is_animating = False
 
 
-# TODO
 # Complete the EnemyGenerator class by inserting code to generate enemies
 # based on the given game level; call TurtleAdventureGame's add_enemy() method
 # to add enemies to the game at certain points in time.
@@ -291,7 +508,10 @@ class EnemyGenerator:
         self.__level: int = level
 
         # example
-        self.__game.after(100, self.create_enemy)
+        self.__game.after(100, self.create_basic_enemy)
+        self.__game.after(5000, self.summon_truck_kun)
+        self.__game.after(10000, self.create_chaser, 1)
+        self.__game.after(20000, self.create_chaser, 1)
 
     @property
     def game(self) -> "TurtleAdventureGame":
@@ -307,15 +527,36 @@ class EnemyGenerator:
         """
         return self.__level
 
-    def create_enemy(self) -> None:
-        """
-        Create a new enemy, possibly based on the game level
-        """
-        new_enemy = DemoEnemy(self.__game, 20, "red")
-        new_enemy.x = 100
-        new_enemy.y = 100
-        self.game.add_element(new_enemy)
+    def create_basic_enemy(self):
+        """Create all basic enemies"""
+        self.create_fencer()
+        self.create_random_walker(self.game.level+3)
+        self.create_chaser(1+self.game.level//10)
 
+    def create_random_walker(self, n) -> None:
+        """Create random walkers"""
+        for _ in range(n):
+            color = random.choice(['purple', 'cyan', 'blue',
+                                   'limegreen', 'yellow', 'orange', 'red'])
+            new_enemy = RandomWalkEnemy(self.game, 20, color)
+            self.game.add_enemy(new_enemy)
+
+    def create_chaser(self, n):
+        """create chasers"""
+        for _ in range(n):
+            chaser = ChasingEnemy(self.game, 55, "red")
+            self.game.add_enemy(chaser)
+
+    def create_fencer(self):
+        """create fencer"""
+        for _ in range(4):
+            fencer = FencingEnemy(self.game, 10, "green")
+            self.game.add_enemy(fencer)
+
+    def summon_truck_kun(self):
+        """summon truck-kun"""
+        truck = TruckKun(self.game, 100, "red")
+        self.game.add_enemy(truck)
 
 class TurtleAdventureGame(Game): # pylint: disable=too-many-ancestors
     """
