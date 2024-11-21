@@ -331,8 +331,8 @@ class ChasingEnemy(Enemy):
         self.__img = None
         self.__img_obj = None
         self.__spd = 3
-        self.x = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_width()-100)
-        self.y = random.randint(self.canvas.winfo_width()*0.2,self.canvas.winfo_height()-100)
+        self.x = random.randint(int(self.canvas.winfo_width()*0.2),self.canvas.winfo_width()-100)
+        self.y = random.randint(int(self.canvas.winfo_width()*0.2),self.canvas.winfo_height()-100)
         self.__x_spd = 0
         self.__y_spd = 0
         self.__hide = False
